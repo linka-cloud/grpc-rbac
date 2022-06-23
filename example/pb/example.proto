@@ -1,0 +1,72 @@
+// Copyright 2022 Linka Cloud  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package example;
+
+option go_package = "go.linka.cloud/grpc-rbac/example";
+
+message Resource {
+  string id = 1;
+}
+
+service ResourceService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc Watch(WatchRequest) returns (stream Event);
+}
+
+message CreateRequest {
+  Resource payload = 1;
+}
+message CreateResponse {
+  Resource result = 1;
+}
+message ReadRequest {
+  string id = 1;
+}
+message ReadResponse {
+  Resource result = 1;
+}
+message UpdateRequest {
+  Resource payload = 1;
+}
+message UpdateResponse {
+  Resource result = 1;
+}
+message DeleteRequest {
+  string id = 1;
+}
+message DeleteResponse {}
+message ListRequest {}
+message ListResponse {
+  repeated Resource results = 1;
+}
+message WatchRequest {}
+message Event {
+  enum Type {
+    UKNOWN = 0;
+    CREATED = 1;
+    UPDATED = 2;
+    DELETED = 3;
+  }
+  Type type = 1;
+  Resource payload = 2;
+}
+
+
