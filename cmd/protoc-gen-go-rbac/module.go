@@ -86,8 +86,6 @@ import (
 	grpc_rbac "go.linka.cloud/grpc-rbac"
 )
 
-var _ grpc_rbac.Permission = nil
-
 {{ range .Services }}
 {{- $svc := . }} 
 var {{ .Name }}Permissions = struct {

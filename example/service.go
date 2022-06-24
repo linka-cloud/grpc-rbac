@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"go.linka.cloud/grpc-rbac/example/pb"
+	example "go.linka.cloud/grpc-rbac/example/pb"
 )
 
 type resourceService struct {

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+MODULE := go.linka.cloud/grpc-rbac
+
 PROTO_BASE_PATH = .
 
 $(shell mkdir -p .bin)
@@ -29,8 +31,7 @@ install:
 .PHONY: lint
 lint:
 	@gofmt -w $(PWD)
-
-# @goimports -w -local $(MODULE) $(PWD)
+	@goimports -w -local $(MODULE) $(PWD)
 
 .PHONY: proto
 proto: gen-proto lint

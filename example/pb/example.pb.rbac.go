@@ -19,8 +19,6 @@ import (
 	grpc_rbac "go.linka.cloud/grpc-rbac"
 )
 
-var _ grpc_rbac.Permission = nil
-
 var ResourceServicePermissions = struct {
 	Create grpc_rbac.Permission
 	Read   grpc_rbac.Permission
