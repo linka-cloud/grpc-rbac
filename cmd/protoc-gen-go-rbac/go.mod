@@ -1,4 +1,4 @@
-module go.linka.cloud/grpcrbac/cmd/protoc-gen-go-rbac
+module go.linka.cloud/grpc-rbac/cmd/protoc-gen-go-rbac
 
 go 1.18
 
