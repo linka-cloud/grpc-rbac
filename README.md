@@ -3,7 +3,7 @@
 *This project is currently in **alpha**. The API should be considered unstable and likely to change*
 
 
-**grpc-rbac** is a minimalist wrapper around [go-rbac (v2)](github.com/mikespook/gorbac) which provide
+**grpc-rbac** is a minimalist wrapper around [go-rbac (v2)](https://github.com/mikespook/gorbac) which provide
 a small **rbac** engine and *gRPC interceptors*. 
 
 **protoc-gen-go-rbac** is a protoc plugin generating the service permissions and a method to register permissions

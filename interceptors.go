@@ -17,7 +17,6 @@ package grpc_rbac
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -43,7 +42,6 @@ func (r *rbac) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (r *rbac) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		log.Printf("%s: checking rbac", info.FullMethod)
 		if err := r.match(ss.Context(), info.FullMethod); err != nil {
 			return err
 		}
@@ -88,7 +86,7 @@ func (r *rbac) match(ctx context.Context, fullMethod string) error {
 		ids = append(ids, v.ID())
 	}
 	if !granted {
-		return status.Errorf(codes.PermissionDenied, "%s: [%s]: not allowed to call %s", strings.Join(ids, ", "))
+		return status.Errorf(codes.PermissionDenied, "[%s]: not allowed to call %s", strings.Join(ids, ", "), fullMethod)
 	}
 	return nil
 }
