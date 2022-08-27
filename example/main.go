@@ -31,30 +31,6 @@ import (
 const (
 	// roleKey is the metadata key where roles are stored
 	roleKey = "roles"
-
-	// some roles
-	admin   = "admin"
-	reader  = "reader"
-	writer  = "writer"
-	watcher = "watcher"
-)
-
-var (
-	// map roles to permissions
-	roles = map[string][]grbac.Permission{
-		reader: {
-			example.ResourceServicePermissions.Read,
-			example.ResourceServicePermissions.List,
-		},
-		writer: {
-			example.ResourceServicePermissions.Create,
-			example.ResourceServicePermissions.Update,
-			example.ResourceServicePermissions.Delete,
-		},
-		watcher: {
-			example.ResourceServicePermissions.Watch,
-		},
-	}
 )
 
 // rbacCtx set role in request outgoing metadata
@@ -80,28 +56,6 @@ func main() {
 		return roles, nil
 	}))
 
-	// create the admin role
-	adminRole := grbac.NewStdRole(admin)
-	if err := rbac.Add(adminRole); err != nil {
-		log.Fatal(err)
-	}
-
-	// create our roles
-	for name, perms := range roles {
-		role := grbac.NewStdRole(name)
-		for _, perm := range perms {
-			if err := role.Assign(perm); err != nil {
-				log.Fatal(err)
-			}
-		}
-		if err := rbac.Add(role); err != nil {
-			log.Fatal(err)
-		}
-		if err := rbac.SetParent(adminRole.ID(), role.ID()); err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	// create the service
 	svc := NewResourceService()
 
@@ -120,19 +74,19 @@ func main() {
 	client := example.NewResourceServiceClient(channel)
 
 	// validate checks
-	if _, err := client.List(rbacCtx(ctx, reader), &example.ListRequest{}); err != nil {
+	if _, err := client.List(rbacCtx(ctx, example.ResourceServiceRoles.Reader.ID()), &example.ListRequest{}); err != nil {
 		log.Fatal(err)
 	}
 
-	if _, err := client.Create(rbacCtx(ctx, reader), &example.CreateRequest{Payload: &example.Resource{Id: "0"}}); err == nil {
+	if _, err := client.Create(rbacCtx(ctx, example.ResourceServiceRoles.Reader.ID()), &example.CreateRequest{Payload: &example.Resource{Id: "0"}}); err == nil {
 		log.Fatal("reader should not be able to create")
 	}
 
-	if _, err := client.Create(rbacCtx(ctx, writer), &example.CreateRequest{Payload: &example.Resource{Id: "0"}}); err != nil {
+	if _, err := client.Create(rbacCtx(ctx, example.ResourceServiceRoles.Writer.ID()), &example.CreateRequest{Payload: &example.Resource{Id: "0"}}); err != nil {
 		log.Fatal(err)
 	}
 
-	ss, err := client.Watch(rbacCtx(ctx, writer), &example.WatchRequest{})
+	ss, err := client.Watch(rbacCtx(ctx, example.ResourceServiceRoles.Writer.ID()), &example.WatchRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,7 +95,7 @@ func main() {
 		log.Fatal("writer should not be able to watch")
 	}
 
-	ss, err = client.Watch(rbacCtx(ctx, admin), &example.WatchRequest{})
+	ss, err = client.Watch(rbacCtx(ctx, example.ResourceServiceRoles.Admin.ID()), &example.WatchRequest{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,7 +103,7 @@ func main() {
 	// create a resource to trigger an event
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		if _, err := client.Create(rbacCtx(ctx, writer), &example.CreateRequest{Payload: &example.Resource{Id: "1"}}); err != nil {
+		if _, err := client.Create(rbacCtx(ctx, example.ResourceServiceRoles.Writer.ID()), &example.CreateRequest{Payload: &example.Resource{Id: "1"}}); err != nil {
 			log.Fatal(err)
 		}
 	}()

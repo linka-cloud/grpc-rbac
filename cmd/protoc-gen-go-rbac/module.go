@@ -15,32 +15,42 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
+	"github.com/sirupsen/logrus"
+
+	"go.linka.cloud/grpc-rbac/rbac"
 )
 
-func Module() *rbac {
-	return &rbac{
+func Module() *module {
+	return &module{
 		ModuleBase: &pgs.ModuleBase{},
 	}
 }
 
-type rbac struct {
+type module struct {
 	*pgs.ModuleBase
 	ctx pgsgo.Context
 	tpl *template.Template
 }
 
-func (p *rbac) Name() string {
+func (p *module) Name() string {
 	return "rbac"
 }
 
-func (p *rbac) InitContext(c pgs.BuildContext) {
+func (p *module) InitContext(c pgs.BuildContext) {
 	p.ModuleBase.InitContext(c)
 	p.ctx = pgsgo.InitContext(c.Parameters())
+
+	type role struct {
+		Name  string
+		Value string
+		Perms []string
+	}
 
 	tpl := template.New("fields").Funcs(map[string]interface{}{
 		"package": p.ctx.PackageName,
@@ -56,18 +66,48 @@ func (p *rbac) InitContext(c pgs.BuildContext) {
 			}
 			return out
 		},
+		"roles": func(s pgs.Service) []*role {
+			roles := make(map[string]*role)
+			for _, m := range s.Methods() {
+				o := &rbac.RBAC{}
+				ok, err := m.Extension(rbac.E_Rbac, o)
+				if err != nil {
+					p.Fail(err)
+				}
+				if !ok {
+					continue
+				}
+				for _, v := range o.Roles {
+					val := fmt.Sprintf("%s.%s", s.Name(), strings.Title(v))
+					if _, ok := roles[val]; !ok {
+						logrus.Infof("adding role %s", val)
+						roles[val] = &role{
+							Name:  strings.Replace(strings.Title(strings.NewReplacer(".", " ", "-", " ", ":", " ", "_", " ").Replace(v)), " ", "", -1),
+							Value: val,
+						}
+					}
+					logrus.Infof("%s: permitting %s", val, m.Name())
+					roles[val].Perms = append(roles[val].Perms, m.Name().String())
+				}
+			}
+			var out []*role
+			for _, v := range roles {
+				out = append(out, v)
+			}
+			return out
+		},
 	})
 	p.tpl = template.Must(tpl.Parse(fieldsTpl))
 }
 
-func (p *rbac) Execute(targets map[string]pgs.File, _ map[string]pgs.Package) []pgs.Artifact {
+func (p *module) Execute(targets map[string]pgs.File, _ map[string]pgs.Package) []pgs.Artifact {
 	for _, f := range targets {
 		p.generate(f)
 	}
 	return p.Artifacts()
 }
 
-func (p *rbac) generate(f pgs.File) {
+func (p *module) generate(f pgs.File) {
 	if len(f.Services()) == 0 {
 		return
 	}
@@ -98,7 +138,25 @@ var {{ .Name }}Permissions = struct {
 	{{- end }}
 }
 
+var {{ .Name }}Roles = struct {
+	{{- range roles . }}
+	{{ .Name }} *grpc_rbac.StdRole
+	{{- end }}
+}{
+	{{- range roles . }}
+	{{ .Name }}: grpc_rbac.NewStdRole("{{ .Value }}"),
+	{{- end }}
+}
+
 func Register{{ .Name }}Permissions(rbac grpc_rbac.RBAC) {
+	{{- range roles . }}
+	{{- $role := . }}
+	{{- range .Perms }}
+	{{ $svc.Name }}Roles.{{ $role.Name }}.Assign({{ $svc.Name }}Permissions.{{ . }})
+	{{- end }}
+	rbac.Add({{ $svc.Name }}Roles.{{ .Name }})
+	
+	{{end }}
 	rbac.Register(&{{ .Name }}_ServiceDesc)
 }
 

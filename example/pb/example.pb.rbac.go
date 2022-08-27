@@ -35,6 +35,38 @@ var ResourceServicePermissions = struct {
 	Watch:  grpc_rbac.NewGRPCPermission("example.ResourceService", "Watch"),
 }
 
+var ResourceServiceRoles = struct {
+	Watcher *grpc_rbac.StdRole
+	Admin   *grpc_rbac.StdRole
+	Writer  *grpc_rbac.StdRole
+	Reader  *grpc_rbac.StdRole
+}{
+	Admin:   grpc_rbac.NewStdRole("ResourceService.Admin"),
+	Writer:  grpc_rbac.NewStdRole("ResourceService.Writer"),
+	Reader:  grpc_rbac.NewStdRole("ResourceService.Reader"),
+	Watcher: grpc_rbac.NewStdRole("ResourceService.Watcher"),
+}
+
 func RegisterResourceServicePermissions(rbac grpc_rbac.RBAC) {
+	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Create)
+	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Read)
+	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Update)
+	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Delete)
+	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.List)
+	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Watch)
+	rbac.Add(ResourceServiceRoles.Admin)
+
+	ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Create)
+	ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Update)
+	ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Delete)
+	rbac.Add(ResourceServiceRoles.Writer)
+
+	ResourceServiceRoles.Reader.Assign(ResourceServicePermissions.Read)
+	ResourceServiceRoles.Reader.Assign(ResourceServicePermissions.List)
+	rbac.Add(ResourceServiceRoles.Reader)
+
+	ResourceServiceRoles.Watcher.Assign(ResourceServicePermissions.Watch)
+	rbac.Add(ResourceServiceRoles.Watcher)
+
 	rbac.Register(&ResourceService_ServiceDesc)
 }

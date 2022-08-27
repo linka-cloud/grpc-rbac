@@ -38,6 +38,8 @@ proto: gen-proto lint
 
 .PHONY: gen-proto
 gen-proto: install
+	@protoc -I. --go_out=$(PROTO_OPTS):. pb/rbac.proto
+	@protoc -I. --go_out=$(PROTO_OPTS):. rbac/rbac.proto
 	@protoc -I. --go_out=$(PROTO_OPTS):. --go-grpc_out=$(PROTO_OPTS):. --go-rbac_out=$(PROTO_OPTS):. example/pb/example.proto
 
 clean:

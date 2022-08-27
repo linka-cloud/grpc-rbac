@@ -1,6 +1,6 @@
 module go.linka.cloud/grpc-rbac
 
-go 1.13
+go 1.16
 
 require (
 	github.com/mikespook/gorbac/v2 v2.3.3

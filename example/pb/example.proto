@@ -18,17 +18,43 @@ package example;
 
 option go_package = "go.linka.cloud/grpc-rbac/example";
 
+import "rbac/rbac.proto";
+
 message Resource {
   string id = 1;
 }
 
 service ResourceService {
-  rpc Create(CreateRequest) returns (CreateResponse);
-  rpc Read(ReadRequest) returns (ReadResponse);
-  rpc Update(UpdateRequest) returns (UpdateResponse);
-  rpc Delete(DeleteRequest) returns (DeleteResponse);
-  rpc List(ListRequest) returns (ListResponse);
-  rpc Watch(WatchRequest) returns (stream Event);
+  rpc Create(CreateRequest) returns (CreateResponse) {
+    option (grpc.rbac) = {
+      roles: ["admin", "writer"]
+    };
+  }
+  rpc Read(ReadRequest) returns (ReadResponse) {
+    option (grpc.rbac) = {
+      roles: ["admin", "reader"]
+    };
+  }
+  rpc Update(UpdateRequest) returns (UpdateResponse) {
+    option (grpc.rbac) = {
+      roles: ["admin", "writer"]
+    };
+  };
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {
+    option (grpc.rbac) = {
+      roles: ["admin", "writer"]
+    };
+  };
+  rpc List(ListRequest) returns (ListResponse) {
+    option (grpc.rbac) = {
+      roles: ["admin", "reader"]
+    };
+  };
+  rpc Watch(WatchRequest) returns (stream Event) {
+    option (grpc.rbac) = {
+      roles: ["admin", "watcher"]
+    };
+  };
 }
 
 message CreateRequest {
