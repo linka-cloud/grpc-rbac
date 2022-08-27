@@ -21,7 +21,6 @@ import (
 
 	pgs "github.com/lyft/protoc-gen-star"
 	pgsgo "github.com/lyft/protoc-gen-star/lang/go"
-	"github.com/sirupsen/logrus"
 
 	"go.linka.cloud/grpc-rbac/rbac"
 )
@@ -80,13 +79,11 @@ func (p *module) InitContext(c pgs.BuildContext) {
 				for _, v := range o.Roles {
 					val := fmt.Sprintf("%s.%s", s.Name(), strings.Title(v))
 					if _, ok := roles[val]; !ok {
-						logrus.Infof("adding role %s", val)
 						roles[val] = &role{
 							Name:  strings.Replace(strings.Title(strings.NewReplacer(".", " ", "-", " ", ":", " ", "_", " ").Replace(v)), " ", "", -1),
 							Value: val,
 						}
 					}
-					logrus.Infof("%s: permitting %s", val, m.Name())
 					roles[val].Perms = append(roles[val].Perms, m.Name().String())
 				}
 			}
