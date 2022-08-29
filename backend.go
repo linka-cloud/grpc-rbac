@@ -15,6 +15,8 @@
 package grpc_rbac
 
 import (
+	"errors"
+
 	"github.com/mikespook/gorbac/v2"
 )
 
@@ -31,6 +33,8 @@ type RBACBackend interface {
 	Remove(id string) (err error)
 	Get(id string) (r Role, parents []string, err error)
 	IsGranted(id string, p Permission, assert AssertionFunc) (rslt bool)
+	HasRole(search string, in ...string) (rslt bool)
+	Granting(p Permission, roles ...string) (granting []string)
 
 	Walk(h gorbac.WalkHandler) error
 	InherCircle() (err error)
@@ -84,4 +88,29 @@ func (r *rbac) AnyGranted(roles []string, permission Permission, assert Assertio
 
 func (r *rbac) AllGranted(roles []string, permission Permission, assert AssertionFunc) (rslt bool) {
 	return gorbac.AllGranted(r.rbac, roles, permission, assert)
+}
+
+func (r *rbac) HasRole(search string, in ...string) (rslt bool) {
+	for _, id := range in {
+		if id == search {
+			return true
+		}
+		_, p, err := r.rbac.Get(id)
+		if errors.Is(err, gorbac.ErrRoleNotExist) {
+			continue
+		}
+		if r.HasRole(search, p...) {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *rbac) Granting(p Permission, roles ...string) (granting []string) {
+	for _, v := range roles {
+		if r.rbac.IsGranted(v, p, nil) {
+			granting = append(granting, v)
+		}
+	}
+	return
 }
