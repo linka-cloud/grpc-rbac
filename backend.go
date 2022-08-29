@@ -18,10 +18,12 @@ import (
 	"github.com/mikespook/gorbac/v2"
 )
 
+var _ RBACBackend = (*rbac)(nil)
+
 type AssertionFunc = gorbac.AssertionFunc
 
 type RBACBackend interface {
-	SetParents(id string, parents []string) error
+	SetParents(role string, parents ...string) error
 	GetParents(id string) ([]string, error)
 	SetParent(id string, parent string) error
 	RemoveParent(id string, parent string) error
@@ -29,9 +31,14 @@ type RBACBackend interface {
 	Remove(id string) (err error)
 	Get(id string) (r Role, parents []string, err error)
 	IsGranted(id string, p Permission, assert AssertionFunc) (rslt bool)
+
+	Walk(h gorbac.WalkHandler) error
+	InherCircle() (err error)
+	AnyGranted(roles []string, permission Permission, assert AssertionFunc) (rslt bool)
+	AllGranted(roles []string, permission Permission, assert AssertionFunc) (rslt bool)
 }
 
-func (r *rbac) SetParents(id string, parents []string) error {
+func (r *rbac) SetParents(id string, parents ...string) error {
 	return r.rbac.SetParents(id, parents)
 }
 
@@ -61,4 +68,20 @@ func (r *rbac) Get(id string) (role gorbac.Role, parents []string, err error) {
 
 func (r *rbac) IsGranted(id string, p gorbac.Permission, assert gorbac.AssertionFunc) (rslt bool) {
 	return r.rbac.IsGranted(id, p, assert)
+}
+
+func (r *rbac) Walk(h gorbac.WalkHandler) error {
+	return gorbac.Walk(r.rbac, h)
+}
+
+func (r *rbac) InherCircle() (err error) {
+	return gorbac.InherCircle(r.rbac)
+}
+
+func (r *rbac) AnyGranted(roles []string, permission Permission, assert AssertionFunc) (rslt bool) {
+	return gorbac.AnyGranted(r.rbac, roles, permission, assert)
+}
+
+func (r *rbac) AllGranted(roles []string, permission Permission, assert AssertionFunc) (rslt bool) {
+	return gorbac.AllGranted(r.rbac, roles, permission, assert)
 }
