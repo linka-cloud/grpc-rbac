@@ -75,14 +75,15 @@ func (p *module) InitContext(c pgs.BuildContext) {
 				p.Fail(err)
 			}
 			for _, v := range def.Roles {
+				val := fmt.Sprintf("%s.%s", s.Name(), strings.Title(v.GetName()))
 				r := &role{
 					Name:  strings.Replace(strings.Title(strings.NewReplacer(".", " ", "-", " ", ":", " ", "_", " ").Replace(v.GetName())), " ", "", -1),
-					Value: fmt.Sprintf("%s.%s", s.Name(), strings.Title(v.GetName())),
+					Value: val,
 				}
 				for _, vv := range v.Parents {
 					r.Parents = append(r.Parents, strings.Title(strings.Replace(strings.Title(strings.NewReplacer(".", " ", "-", " ", ":", " ", "_", " ").Replace(vv)), " ", "", -1)))
 				}
-				roles[v.GetName()] = r
+				roles[val] = r
 			}
 			for _, m := range s.Methods() {
 				o := &rbac.RBAC{}

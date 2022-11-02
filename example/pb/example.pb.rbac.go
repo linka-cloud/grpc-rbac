@@ -47,7 +47,10 @@ var ResourceServiceRoles = struct {
 	Writer:  grpc_rbac.NewStdRole("ResourceService.Writer"),
 }
 
-func RegisterResourceServicePermissions(rbac grpc_rbac.RBAC) {
+func RegisterResourceServicePermissions(rbac grpc_rbac.RBAC) { // Assign Admin permissions
+	if err := ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Create); err != nil {
+		panic(err)
+	}
 	// Register Admin role
 	if err := rbac.Add(ResourceServiceRoles.Admin); err != nil {
 		panic(err)
