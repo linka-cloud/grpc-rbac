@@ -36,37 +36,70 @@ var ResourceServicePermissions = struct {
 }
 
 var ResourceServiceRoles = struct {
-	Watcher *grpc_rbac.StdRole
 	Admin   *grpc_rbac.StdRole
-	Writer  *grpc_rbac.StdRole
 	Reader  *grpc_rbac.StdRole
+	Watcher *grpc_rbac.StdRole
+	Writer  *grpc_rbac.StdRole
 }{
 	Admin:   grpc_rbac.NewStdRole("ResourceService.Admin"),
-	Writer:  grpc_rbac.NewStdRole("ResourceService.Writer"),
 	Reader:  grpc_rbac.NewStdRole("ResourceService.Reader"),
 	Watcher: grpc_rbac.NewStdRole("ResourceService.Watcher"),
+	Writer:  grpc_rbac.NewStdRole("ResourceService.Writer"),
 }
 
 func RegisterResourceServicePermissions(rbac grpc_rbac.RBAC) {
-	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Create)
-	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Read)
-	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Update)
-	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Delete)
-	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.List)
-	ResourceServiceRoles.Admin.Assign(ResourceServicePermissions.Watch)
-	rbac.Add(ResourceServiceRoles.Admin)
+	// Register Admin role
+	if err := rbac.Add(ResourceServiceRoles.Admin); err != nil {
+		panic(err)
+	}
 
-	ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Create)
-	ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Update)
-	ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Delete)
-	rbac.Add(ResourceServiceRoles.Writer)
+	// Assign Reader permissions
+	if err := ResourceServiceRoles.Reader.Assign(ResourceServicePermissions.Read); err != nil {
+		panic(err)
+	}
+	if err := ResourceServiceRoles.Reader.Assign(ResourceServicePermissions.List); err != nil {
+		panic(err)
+	}
+	// Register Reader role
+	if err := rbac.Add(ResourceServiceRoles.Reader); err != nil {
+		panic(err)
+	}
 
-	ResourceServiceRoles.Reader.Assign(ResourceServicePermissions.Read)
-	ResourceServiceRoles.Reader.Assign(ResourceServicePermissions.List)
-	rbac.Add(ResourceServiceRoles.Reader)
+	// Assign Watcher permissions
+	if err := ResourceServiceRoles.Watcher.Assign(ResourceServicePermissions.Watch); err != nil {
+		panic(err)
+	}
+	// Register Watcher role
+	if err := rbac.Add(ResourceServiceRoles.Watcher); err != nil {
+		panic(err)
+	}
 
-	ResourceServiceRoles.Watcher.Assign(ResourceServicePermissions.Watch)
-	rbac.Add(ResourceServiceRoles.Watcher)
+	// Assign Writer permissions
+	if err := ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Create); err != nil {
+		panic(err)
+	}
+	if err := ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Update); err != nil {
+		panic(err)
+	}
+	if err := ResourceServiceRoles.Writer.Assign(ResourceServicePermissions.Delete); err != nil {
+		panic(err)
+	}
+	// Register Writer role
+	if err := rbac.Add(ResourceServiceRoles.Writer); err != nil {
+		panic(err)
+	}
 
+	// Assign Admin parents
+	if err := rbac.SetParent(ResourceServiceRoles.Admin.ID(), ResourceServiceRoles.Writer.ID()); err != nil {
+		panic(err)
+	}
+	if err := rbac.SetParent(ResourceServiceRoles.Admin.ID(), ResourceServiceRoles.Reader.ID()); err != nil {
+		panic(err)
+	}
+	if err := rbac.SetParent(ResourceServiceRoles.Admin.ID(), ResourceServiceRoles.Watcher.ID()); err != nil {
+		panic(err)
+	}
+
+	// Register ResourceService Service rules
 	rbac.Register(&ResourceService_ServiceDesc)
 }

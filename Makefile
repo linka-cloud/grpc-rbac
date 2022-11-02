@@ -34,12 +34,15 @@ lint:
 	@goimports -w -local $(MODULE) $(PWD)
 
 .PHONY: proto
-proto: gen-proto lint
+proto: gen-plugin-proto gen-proto lint
+
+.PHONY: gen-plugin-proto
+gen-plugin-proto:
+	@protoc -I. --go_out=$(PROTO_OPTS):. rbac/rbac.proto
 
 .PHONY: gen-proto
 gen-proto: install
 	@protoc -I. --go_out=$(PROTO_OPTS):. pb/rbac.proto
-	@protoc -I. --go_out=$(PROTO_OPTS):. rbac/rbac.proto
 	@protoc -I. --go_out=$(PROTO_OPTS):. --go-grpc_out=$(PROTO_OPTS):. --go-rbac_out=$(PROTO_OPTS):. example/pb/example.proto
 
 clean:

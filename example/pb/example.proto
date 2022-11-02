@@ -25,34 +25,40 @@ message Resource {
 }
 
 service ResourceService {
+  option(rbac.def) = {
+    roles: [{
+      name: "admin",
+      parents: ["writer", "reader", "watcher"],
+    }],
+  };
   rpc Create(CreateRequest) returns (CreateResponse) {
-    option (grpc.rbac) = {
-      roles: ["admin", "writer"]
+    option (rbac.access) = {
+      roles: ["writer"]
     };
   }
   rpc Read(ReadRequest) returns (ReadResponse) {
-    option (grpc.rbac) = {
-      roles: ["admin", "reader"]
+    option (rbac.access) = {
+      roles: ["reader"]
     };
   }
   rpc Update(UpdateRequest) returns (UpdateResponse) {
-    option (grpc.rbac) = {
-      roles: ["admin", "writer"]
+    option (rbac.access) = {
+      roles: ["writer"]
     };
   };
   rpc Delete(DeleteRequest) returns (DeleteResponse) {
-    option (grpc.rbac) = {
-      roles: ["admin", "writer"]
+    option (rbac.access) = {
+      roles: ["writer"]
     };
   };
   rpc List(ListRequest) returns (ListResponse) {
-    option (grpc.rbac) = {
-      roles: ["admin", "reader"]
+    option (rbac.access) = {
+      roles: ["reader"]
     };
   };
   rpc Watch(WatchRequest) returns (stream Event) {
-    option (grpc.rbac) = {
-      roles: ["admin", "watcher"]
+    option (rbac.access) = {
+      roles: ["watcher"]
     };
   };
 }

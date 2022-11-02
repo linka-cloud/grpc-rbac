@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -46,9 +47,10 @@ func (p *module) InitContext(c pgs.BuildContext) {
 	p.ctx = pgsgo.InitContext(c.Parameters())
 
 	type role struct {
-		Name  string
-		Value string
-		Perms []string
+		Name    string
+		Value   string
+		Perms   []string
+		Parents []string
 	}
 
 	tpl := template.New("fields").Funcs(map[string]interface{}{
@@ -67,9 +69,24 @@ func (p *module) InitContext(c pgs.BuildContext) {
 		},
 		"roles": func(s pgs.Service) []*role {
 			roles := make(map[string]*role)
+			var def rbac.RoleDefinition
+			_, err := s.Extension(rbac.E_Def, &def)
+			if err != nil {
+				p.Fail(err)
+			}
+			for _, v := range def.Roles {
+				r := &role{
+					Name:  strings.Replace(strings.Title(strings.NewReplacer(".", " ", "-", " ", ":", " ", "_", " ").Replace(v.GetName())), " ", "", -1),
+					Value: fmt.Sprintf("%s.%s", s.Name(), strings.Title(v.GetName())),
+				}
+				for _, vv := range v.Parents {
+					r.Parents = append(r.Parents, strings.Title(strings.Replace(strings.Title(strings.NewReplacer(".", " ", "-", " ", ":", " ", "_", " ").Replace(vv)), " ", "", -1)))
+				}
+				roles[v.GetName()] = r
+			}
 			for _, m := range s.Methods() {
 				o := &rbac.RBAC{}
-				ok, err := m.Extension(rbac.E_Rbac, o)
+				ok, err := m.Extension(rbac.E_Access, o)
 				if err != nil {
 					p.Fail(err)
 				}
@@ -91,6 +108,9 @@ func (p *module) InitContext(c pgs.BuildContext) {
 			for _, v := range roles {
 				out = append(out, v)
 			}
+			sort.Slice(out, func(i, j int) bool {
+				return sort.StringsAreSorted([]string{out[i].Name, out[j].Name})
+			})
 			return out
 		},
 	})
@@ -148,12 +168,29 @@ var {{ .Name }}Roles = struct {
 func Register{{ .Name }}Permissions(rbac grpc_rbac.RBAC) {
 	{{- range roles . }}
 	{{- $role := . }}
+	{{- if .Perms }}// Assign {{ .Name }} permissions{{ end }}
 	{{- range .Perms }}
-	{{ $svc.Name }}Roles.{{ $role.Name }}.Assign({{ $svc.Name }}Permissions.{{ . }})
+	if err := {{ $svc.Name }}Roles.{{ $role.Name }}.Assign({{ $svc.Name }}Permissions.{{ . }}); err != nil {
+		panic(err)
+	}
 	{{- end }}
-	rbac.Add({{ $svc.Name }}Roles.{{ .Name }})
+	// Register {{ .Name }} role
+	if err := rbac.Add({{ $svc.Name }}Roles.{{ .Name }}); err != nil {
+		panic(err)
+	}
 	
-	{{end }}
+	{{ end }}
+	{{- range roles . }}
+	{{- $role := . }}
+	{{- if .Parents }}// Assign {{ .Name }} parents{{ end }}
+	{{- range .Parents }}
+	if err := rbac.SetParent({{ $svc.Name }}Roles.{{ $role.Name }}.ID(), {{ $svc.Name }}Roles.{{ . }}.ID()); err != nil {
+		panic(err)
+	}
+	{{- end }}
+	{{ end }}
+
+	// Register {{ .Name }} Service rules
 	rbac.Register(&{{ .Name }}_ServiceDesc)
 }
 

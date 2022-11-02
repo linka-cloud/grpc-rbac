@@ -13,17 +13,29 @@
 // limitations under the License.
 
 syntax = "proto2";
-package grpc;
+package rbac;
 
 option go_package = "go.linka.cloud/grpc-rbac/rbac;rbac";
 
 import "google/protobuf/descriptor.proto";
 
+extend google.protobuf.ServiceOptions {
+  optional RoleDefinition def = 1190;
+}
 
 extend google.protobuf.MethodOptions {
-  optional RBAC rbac = 1191;
+  optional RBAC access = 1191;
 }
 
 message RBAC {
   repeated string roles = 1;
+}
+
+message RoleDefinition {
+  repeated Role roles = 1;
+}
+
+message Role {
+  optional string name = 1;
+  repeated string parents = 2;
 }
