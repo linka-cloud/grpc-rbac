@@ -33,6 +33,7 @@ type Interceptors interface {
 
 func (r *rbac) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		ctx = context.WithValue(ctx, key{}, r)
 		if err := r.match(ctx, info.FullMethod); err != nil {
 			return nil, err
 		}
@@ -42,10 +43,11 @@ func (r *rbac) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 
 func (r *rbac) StreamServerInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := context.WithValue(ss.Context(), key{}, r)
 		if err := r.match(ss.Context(), info.FullMethod); err != nil {
 			return err
 		}
-		return handler(srv, ss)
+		return handler(srv, &wrapper{ctx: ctx, ServerStream: ss})
 	}
 }
 
@@ -89,4 +91,13 @@ func (r *rbac) match(ctx context.Context, fullMethod string) error {
 		return status.Errorf(codes.PermissionDenied, "[%s]: not allowed to call %s", strings.Join(ids, ", "), fullMethod)
 	}
 	return nil
+}
+
+type wrapper struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (w *wrapper) Context() context.Context {
+	return w.ctx
 }

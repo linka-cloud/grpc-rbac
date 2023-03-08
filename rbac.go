@@ -15,6 +15,7 @@
 package grpc_rbac
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -57,4 +58,19 @@ func (r *rbac) Register(desc *grpc.ServiceDesc) {
 		f := fmt.Sprintf("/%s/%s", desc.ServiceName, v.StreamName)
 		r.reg.Store(f, GRPCPermission{fullMethod: f, serviceName: desc.ServiceName, methodOrStreamName: v.StreamName})
 	}
+}
+
+type key struct{}
+
+func FromContext(ctx context.Context) (RBAC, bool) {
+	v, ok := ctx.Value(key{}).(RBAC)
+	return v, ok
+}
+
+func MustFromContext(ctx context.Context) RBAC {
+	v, ok := FromContext(ctx)
+	if !ok {
+		panic("no RBAC in context")
+	}
+	return v
 }
