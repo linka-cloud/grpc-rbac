@@ -1,0 +1,14 @@
+# For details on buf.yaml configuration, visit https://buf.build/docs/configuration/v2/buf-yaml
+version: v2
+modules:
+- path: .
+  name: buf.build/linka-cloud/grpc-rbac
+  excludes:
+  - example
+  - pb
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE
